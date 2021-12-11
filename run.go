@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-routeros/routeros/proto"
+	"k8s.io/klog/v2"
 )
 
 type asyncReply struct {
@@ -17,7 +18,13 @@ func (c *Client) Run(sentence ...string) (*Reply, error) {
 }
 
 // RunArgs sends a sentence to the RouterOS device and waits for the reply.
-func (c *Client) RunArgs(sentence []string) (*Reply, error) {
+func (c *Client) RunArgs(sentence []string) (r *Reply, e error) {
+	defer func() {
+		if r := recover(); r != nil {
+			e = fmt.Errorf("RouterOS RunArgs recovered from panic: %v", r)
+			klog.Error(e)
+		}
+	}()
 	c.w.BeginSentence()
 	for _, word := range sentence {
 		c.w.WriteWord(word)
